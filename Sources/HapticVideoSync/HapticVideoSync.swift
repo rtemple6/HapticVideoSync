@@ -20,7 +20,7 @@ public class HapticVideoSync {
         displayLink?.add(to: .main, forMode: .default)
     }
 
-    @objc public func update() {
+    @objc private func update() {
         let currentTime = player.currentTime()
 
         if lastTriggeredTimeIndex < hapticTimestamps.count &&
