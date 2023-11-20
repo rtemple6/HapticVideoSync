@@ -12,7 +12,6 @@ final class HapticVideoSyncTests: XCTestCase {
         super.setUp()
         mockPlayer = MockAVPlayer()
         mockHapticFeedbackGenerator = MockHapticFeedbackGenerator()
-        // Example timestamps
         let timestamps = [1.0, 2.0, 3.0]
         hapticVideoSync = HapticVideoSync(player: mockPlayer, hapticFeedbackGenerator: mockHapticFeedbackGenerator, timestampsInSeconds: timestamps)
     }
@@ -25,24 +24,23 @@ final class HapticVideoSyncTests: XCTestCase {
 
     func testHapticFeedbackTriggeredAtCorrectTimes() {
         // Simulate video playback and check if haptic feedback is triggered at correct times
-        mockPlayer.currentTime = CMTimeMakeWithSeconds(1.0, preferredTimescale: 1000)
-        hapticVideoSync.testUpdate() // Manually call update to simulate display link tick
+        simulatePlayback(atTime: 1.0)
         XCTAssertTrue(mockHapticFeedbackGenerator.didTriggerHapticFeedback)
 
-        mockPlayer.currentTime = CMTimeMakeWithSeconds(2.0, preferredTimescale: 1000)
-        hapticVideoSync.testUpdate()
+        simulatePlayback(atTime: 2.0)
         XCTAssertTrue(mockHapticFeedbackGenerator.didTriggerHapticFeedback)
+    }
 
-        // Add more assertions as needed
+    private func simulatePlayback(atTime time: Double) {
+        mockPlayer.currentTime = CMTimeMakeWithSeconds(time, preferredTimescale: 1000)
+        hapticVideoSync.checkForHapticTrigger(time: mockPlayer.currentTime)
     }
 }
 
-// Mock AVPlayer to simulate playback
 class MockAVPlayer: AVPlayer {
     var currentTime: CMTime = CMTime.zero
 }
 
-// Mock implementation of HapticFeedbackProtocol
 class MockHapticFeedbackGenerator: HapticFeedbackProtocol {
     var didTriggerHapticFeedback = false
     

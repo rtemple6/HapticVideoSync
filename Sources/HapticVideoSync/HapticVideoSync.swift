@@ -4,7 +4,10 @@ import UIKit
 public class HapticVideoSync {
     private var player: AVPlayer
     private var hapticFeedbackGenerator: HapticFeedbackProtocol
-    private var displayLink: CADisplayLink?
+    
+    private var observer: NSKeyValueObservation?
+    private var timeObserverToken: Any?
+    
     private var hapticTimestamps: [CMTime]
     private var lastTriggeredTimeIndex = 0
 
@@ -12,32 +15,30 @@ public class HapticVideoSync {
         self.player = player
         self.hapticFeedbackGenerator = hapticFeedbackGenerator
         self.hapticTimestamps = timestampsInSeconds.map { CMTimeMakeWithSeconds($0, preferredTimescale: 1000) }
-        setupDisplayLink()
+        setupPeriodicTimeObserver()
     }
-
-    private func setupDisplayLink() {
-        displayLink = CADisplayLink(target: self, selector: #selector(update))
-        displayLink?.add(to: .main, forMode: .default)
+    
+    private func setupPeriodicTimeObserver() {
+        let interval = CMTime(seconds: 0.01, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        
+        timeObserverToken = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+            self?.checkForHapticTrigger(time: time)
+        }
     }
-
-    @objc private func update() {
-        let currentTime = player.currentTime()
-
+    
+    public func checkForHapticTrigger(time: CMTime) {
         if lastTriggeredTimeIndex < hapticTimestamps.count &&
-           currentTime >= hapticTimestamps[lastTriggeredTimeIndex] {
-
+            time >= hapticTimestamps[lastTriggeredTimeIndex] {
+            
             hapticFeedbackGenerator.triggerHapticFeedback()
             lastTriggeredTimeIndex += 1
         }
     }
 
     deinit {
-        displayLink?.invalidate()
-    }
-    
-    // MARK: - Testing helper method
-    
-    public func testUpdate() {
-        update()
+        observer?.invalidate()
+        if let token = timeObserverToken {
+            player.removeTimeObserver(token)
+        }
     }
 }
